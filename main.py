@@ -10,6 +10,11 @@ screen = pygame.display.set_mode((1280, 720))
 clock = pygame.time.Clock()
 running = True
 
+## Agent
+# reset
+# reward
+# play(action) -> state
+# game_iteration
 
 
 # Game Variables
@@ -17,10 +22,11 @@ jumping = False
 Jump_Height = 18
 Y_velocity = Jump_Height
 Y_gravity = 1
-cactii_limit  = 3
+cactii_limit  = 5
 cactii_list = []
 cactus_time = time.time()
 cactus_intervals = range(1,10,2)
+cactus_speed = 400
 score = 0
 level_time = time.time()
 # Cactus
@@ -101,7 +107,7 @@ while running:
         # Moving cactii
         else:
             screen.blit(cactus, i.pos)
-            i.pos.x -= 400 * dt
+            i.pos.x -= cactus_speed * dt
     
     
     # Spawning new cactii
@@ -112,8 +118,8 @@ while running:
 
     # Increasing difficulty
     if time.time() - level_time % 10 == 0:
-        if cactii_limit < 7:
-            cactii_limit += 1
+        cactus_speed += 400
+        print(f"New Speed: {cactus_speed}")
         level_time = time.time()
 
 
