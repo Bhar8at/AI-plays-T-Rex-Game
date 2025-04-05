@@ -10,7 +10,6 @@ class DinoGame:
         self.running = True
         self.screen = pygame.display.set_mode((1280, 720))
         self.clock = pygame.time.Clock()
-    
         self.reset()
 
     class Cactus(pygame.sprite.Sprite):
@@ -39,6 +38,7 @@ class DinoGame:
         self.frame_iteration = 0
 
     def load_sprites(self):
+        print("Loading sprites!!")
         self.player = pygame.image.load('Dino.bmp').convert()
         self.player_runnning = pygame.image.load('Dino_Running.png').convert()
         new_size = (self.player.get_width() * 1, self.player.get_height() * 1)  # 2x bigger
@@ -53,7 +53,7 @@ class DinoGame:
     
     def place_sprites(self):
         # Adjust player position to be within the visible screen area
-        self.player_pos = pygame.Vector2(self.screen.get_width() / 6, self.screen.get_height() - self.player.get_height() + 2)
+        self.player_pos = pygame.Vector2(-self.screen.get_width() * 5/6,self.screen.get_height() - self.player.get_height() + 2)
         # Adjust cactus position to ensure it starts on-screen
         self.cactus_pos = pygame.Vector2(self.screen.get_width(), self.screen.get_height() * 2 / 3 + 40)
     
@@ -64,8 +64,12 @@ class DinoGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-        # Render the game 
+
+        # Render the game (Issue with rendering the charactyers)
         self.render()
+
+
+
         # Move the player
         self.move(action)
 
@@ -90,7 +94,6 @@ class DinoGame:
                 self.cactii_list.remove(i)
             # Moving cactii
             else:
-                self.screen.blit(self.cactus, i.pos)
                 i.pos.x -= self.cactus_speed * dt
         
         # Spawning new cactii
@@ -114,29 +117,30 @@ class DinoGame:
         text = self.font.render(f"Score: {self.score}", True, (255,255,255))
         self.screen.blit(text, (0, 0))
         
-        # Ensure player and cactii are rendered
-        self.screen.blit(self.player, self.player_pos)
+        # Render player at the correct position
+        if self.jumping:
+            print("This is being rendered")
+            self.screen.blit(self.player_runnning, self.player_pos)
+        else:
+            print("This is being rendered")
+            self.screen.blit(self.player, self.player_pos)
+            print(f"The player is present at {self.player_pos}")
+        
+        # Render cactii at their correct positions
         for cactus in self.cactii_list:
             self.screen.blit(self.cactus, cactus.pos)
-        
-        
 
     def move(self, action):
         if action == 1:
             self.jumping = True
         
-        # Player
+        # Update player position
         if self.jumping:
             self.player_pos.y -= self.Y_velocity
             self.Y_velocity -= self.Y_gravity
             if self.Y_velocity < -self.Jump_Height:
                 self.jumping = False
                 self.Y_velocity = self.Jump_Height
-            # Player (Walking)
-            self.screen.blit(self.player_runnning, self.player_pos)
-        else:
-            # Player (Standing)
-            self.screen.blit(self.player, self.player_pos)
 
 
 
