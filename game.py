@@ -80,7 +80,7 @@ class DinoGame:
         dt = self.clock.tick(60) / 1000
         for i in self.cactii_list:
             # Collision Detection
-            if i.pos.distance_to(self.player_pos) < 44:
+            if i.pos.distance_to(self.player_pos) < 40:
                 print("Collision Detected!")
                 game_over = True
                 return game_over, self.score
