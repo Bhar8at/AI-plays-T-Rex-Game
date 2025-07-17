@@ -5,7 +5,8 @@
     - Jump = [0,1]
 
 - State 
-    - List of cactii and their positions
+    - incoming cactus position
+    - incoming cactus speed
 
 - Reward
     - Jump over cactus = +10
