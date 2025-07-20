@@ -11,4 +11,7 @@
 - Reward
     - Jump over cactus = +10
     - Touch cactus = -10
-    - Do nothing = 0
+    - Do nothing = keep running +5
+
+
+    
