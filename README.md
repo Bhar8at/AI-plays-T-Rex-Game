@@ -4,9 +4,12 @@
     - Do nothing = [1,0]
     - Jump = [0,1]
 
-- State 
+- Observations describing a state 
+    - game_over status
     - incoming cactus position
     - incoming cactus speed
+    - score
+   
 
 - Reward
     - Jump over cactus = +10

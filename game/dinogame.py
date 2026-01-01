@@ -2,17 +2,28 @@
 import time
 import random
 import pygame
+import numpy as np
 from .constants import *
 from .cactus import Cactus
 from .utils import load_image
+import gymnasium as gym
+from gymnasium import spaces
 
-class DinoGame:
+class DinoGame(gym.Env):
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Dino Game")
         self.clock = pygame.time.Clock()
+        self.game_over = False
         self.reset()
+        self.action_space = spaces.Discrete(2)
+        self.observation_space = spaces.Box(
+            low=np.array([0, 0, 0, 0]), 
+            high=np.array([SCREEN_WIDTH * 2, 1, SCREEN_HEIGHT, 1000]), 
+            shape=(4,), 
+            dtype=np.float32
+        )
 
         print("\n" * 4)
         print("[DEBUG] Initialized Game")
@@ -20,21 +31,25 @@ class DinoGame:
 
     # ---------- Sprite setup ----------
     def _load_sprites(self):
-        print("[DEBUG] Loading and Resizing Sprites")
         self.player_img = load_image(DINO_IMG)
         self.player_running_img = load_image(DINO_RUNNING_IMG)
         self.cactus_img = load_image(CACTUS_IMG)
         self.font = pygame.font.Font(None, 36)
 
     def _place_sprites(self):
-        print("[DEBUG] Placing sprites")
         self.player_pos = pygame.Vector2(-SCREEN_WIDTH * 5 / 6,
                                          SCREEN_HEIGHT - self.player_img.get_height() + 2)
         self.cactus_spawn = pygame.Vector2(SCREEN_WIDTH,
                                            SCREEN_HEIGHT * 2 / 3 + 40)
 
     # ---------- Reset ----------
-    def reset(self):
+    def reset(self, seed=None):
+        super().reset(seed=seed)
+
+        if seed is not None:
+            np.random.seed(seed)
+
+        self.game_over = False
         self.jumping = False
         self.y_velocity = JUMP_HEIGHT
         self.cactii_list = []
@@ -45,6 +60,16 @@ class DinoGame:
         self.frame_iteration = 0
         self._load_sprites()
         self._place_sprites()
+        cactus_pos = self.cactii_list[0].pos if self.cactii_list else pygame.Vector2(2000, 2000)
+        dist_to_cactus = cactus_pos.x - self.player_pos.x
+        obs = np.array([
+            dist_to_cactus / SCREEN_WIDTH,  # Normalize
+            float(self.jumping),
+            self.player_pos.y / SCREEN_HEIGHT,  # Normalize
+            self.cactus_speed / 500  # Normalize
+        ], dtype=np.float32
+    )
+        return obs, {"score": self.score}
 
     # ---------- Render ----------
     def render(self):
@@ -62,7 +87,6 @@ class DinoGame:
 
     # ---------- Move player ----------
     def move(self, action: int):
-        print("[DEBUG] Action:", action)
         if action == 1 and not self.jumping:
             self.jumping = True
 
@@ -74,14 +98,13 @@ class DinoGame:
                 self.y_velocity = JUMP_HEIGHT
 
     # ---------- Step ----------
-    def play_step(self, action: int):
+    def step(self, action: int):
+        reward = 0.1
         self.frame_iteration += 1
         dt = self.clock.tick(FPS) / 1000.0
 
         self.render()
         self.move(action)
-
-        game_over = False
 
         # Spawn cactii
         if (len(self.cactii_list) < CACTII_LIMIT and
@@ -92,14 +115,15 @@ class DinoGame:
         for cactus in self.cactii_list[:]:
             # Collision
             if cactus.pos.distance_to(self.player_pos) < COLLISION_THRESHOLD:
-                print("[DEBUG] Collision Detected!")
-                game_over = True
+                self.game_over = True
+                reward = -10
                 break
 
             # Score
             if cactus.pos.x < self.player_pos.x and not cactus.scored:
                 self.score += 1
                 cactus.scored = True
+                reward = 5
                 print(f"Score: {self.score}")
 
             # Remove off-screen
@@ -108,14 +132,24 @@ class DinoGame:
             else:
                 cactus.pos.x -= self.cactus_speed * dt
 
-        # Increase difficulty every 10 seconds
-        if int(time.time() - self.level_timer) % 10 == 0 and int(time.time() - self.level_timer) > 0:
-            self.cactus_speed += SPEED_INCREMENT
-            print(f"[DEBUG] New speed: {self.cactus_speed}")
-            self.level_timer = time.time()
+        # # Increase difficulty every 10 seconds
+        # if int(time.time() - self.level_timer) % 10 == 0 and int(time.time() - self.level_timer) > 0:
+        #     self.cactus_speed += SPEED_INCREMENT
+        #     print(f"[DEBUG] New speed: {self.cactus_speed}")
+        #     self.level_timer = time.time()
 
         pygame.display.flip()
-        print("[DEBUG] Cactii on field:", len(self.cactii_list))
 
-        cactus_pos = self.cactii_list[0].pos if self.cactii_list else pygame.Vector2(0, 0)
-        return game_over, self.score, cactus_pos
+        cactus_pos = self.cactii_list[0].pos if self.cactii_list else pygame.Vector2(2000, 2000)
+        dist_to_cactus = cactus_pos.x - self.player_pos.x
+        obs = np.array([
+            dist_to_cactus / SCREEN_WIDTH,
+            float(self.jumping),
+            self.player_pos.y / SCREEN_HEIGHT,
+            self.cactus_speed / 500
+        ], dtype=np.float32
+    )
+        return obs, reward, self.game_over, False, {"score": self.score}
+    
+    def close(self):
+        pygame.quit()
